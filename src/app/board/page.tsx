@@ -28,6 +28,9 @@ export default function BoardPage() {
   const [posting, setPosting] = useState(false);
   const [myPostInterests, setMyPostInterests] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<"" | "hiring" | "looking">("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     loadPosts();
@@ -97,7 +100,6 @@ export default function BoardPage() {
 
   const statusLabel: Record<string, { text: string; bg: string; color: string }> = {
     open: { text: "모집중", bg: "#E8F5E9", color: "#2E7D32" },
-    closing: { text: "마감임박", bg: "#FFF3E0", color: "#E65100" },
     closed: { text: "마감", bg: "#F5F5F7", color: "#86868B" },
   };
 
@@ -235,25 +237,73 @@ export default function BoardPage() {
                     관심 {p.interest_count}
                   </button>
                 </div>
-                {user && p.author_id === user.id && p.status === "open" && (
-                  <div className="flex gap-2 pt-1">
+                {user && p.author_id === user.id && editingId === p.id && (
+                  <div className="flex flex-col gap-3 pt-2 border-t border-[#F5F5F7]">
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="h-10 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+                    />
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={3}
+                      className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="h-9 px-4 bg-[#F5F5F7] text-[#1D1D1F] text-[13px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await supabase.from("posts").update({ title: editTitle, content: editContent }).eq("id", p.id);
+                          setEditingId(null);
+                          loadPosts();
+                        }}
+                        disabled={!editTitle.trim()}
+                        className="h-9 px-4 bg-[#007AFF] text-white text-[13px] font-semibold rounded-[10px] hover:bg-[#0066DD] transition-colors disabled:opacity-50"
+                      >
+                        저장
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {user && p.author_id === user.id && editingId !== p.id && (
+                  <div className="flex gap-3 pt-1">
                     <button
-                      onClick={async () => {
-                        await supabase.from("posts").update({ status: "closing" }).eq("id", p.id);
-                        loadPosts();
+                      onClick={() => {
+                        setEditingId(p.id);
+                        setEditTitle(p.title);
+                        setEditContent(p.content || "");
                       }}
-                      className="text-[12px] text-[#FF9500] hover:underline"
+                      className="text-[12px] text-[#007AFF] hover:underline"
                     >
-                      마감임박으로 변경
+                      수정
                     </button>
+                    {p.status === "open" && (
+                      <button
+                        onClick={async () => {
+                          await supabase.from("posts").update({ status: "closed" }).eq("id", p.id);
+                          loadPosts();
+                        }}
+                        className="text-[12px] text-[#FF9500] hover:underline"
+                      >
+                        마감
+                      </button>
+                    )}
                     <button
                       onClick={async () => {
-                        await supabase.from("posts").update({ status: "closed" }).eq("id", p.id);
+                        if (!confirm("정말 삭제하시겠습니까?")) return;
+                        await supabase.from("interests").delete().eq("to_post_id", p.id);
+                        await supabase.from("posts").delete().eq("id", p.id);
                         loadPosts();
                       }}
                       className="text-[12px] text-[#FF3B30] hover:underline"
                     >
-                      마감
+                      삭제
                     </button>
                   </div>
                 )}
