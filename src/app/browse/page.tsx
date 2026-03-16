@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/app-layout";
 import LockGuard from "@/components/lock-guard";
 import { useAuth } from "@/lib/auth-context";
@@ -11,8 +12,9 @@ const GENRE_OPTIONS = ["RPG", "FPS", "액션", "퍼즐", "시뮬레이션", "플
 
 export default function BrowsePage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filterGenre, setFilterGenre] = useState("");
   const [myInterests, setMyInterests] = useState<Set<string>>(new Set());
 

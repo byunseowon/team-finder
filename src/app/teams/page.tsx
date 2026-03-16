@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/app-layout";
 import { supabase } from "@/lib/supabase";
 import { Team, Student } from "@/lib/types";
@@ -15,6 +16,8 @@ export default function TeamsPage() {
   const [assignedCount, setAssignedCount] = useState(0);
   const [settings, setSettings] = useState({ max_team_size: 5 });
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
 
   useEffect(() => {
     loadData();
@@ -78,8 +81,20 @@ export default function TeamsPage() {
         </div>
       </div>
 
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="팀 이름 또는 팀원 이름으로 검색"
+        className="w-full h-11 bg-white rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30 mb-4"
+        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {teams.map((t) => {
+        {teams.filter((t) => {
+          if (!search.trim()) return true;
+          const q = search.trim().toLowerCase();
+          return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));
+        }).map((t) => {
           const ratio = t.members.length / settings.max_team_size;
           const badgeBg = ratio >= 1 ? "#E8F5E9" : ratio >= 0.5 ? "#E3F2FD" : "#FFF3E0";
           const badgeColor = ratio >= 1 ? "#2E7D32" : ratio >= 0.5 ? "#1565C0" : "#E65100";
