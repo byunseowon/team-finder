@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/app-layout";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,14 @@ interface TeamWithMembers extends Team {
 }
 
 export default function TeamsPage() {
+  return (
+    <Suspense fallback={<AppLayout><h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">팀 현황</h1><p className="text-[14px] text-[#86868B] text-center py-12">불러오는 중...</p></AppLayout>}>
+      <TeamsContent />
+    </Suspense>
+  );
+}
+
+function TeamsContent() {
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   const [assignedCount, setAssignedCount] = useState(0);

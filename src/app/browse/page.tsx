@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/app-layout";
 import LockGuard from "@/components/lock-guard";
@@ -11,6 +11,14 @@ import { Student } from "@/lib/types";
 const GENRE_OPTIONS = ["RPG", "FPS", "액션", "퍼즐", "시뮬레이션", "플랫포머", "공포", "레이싱", "스포츠", "기타"];
 
 export default function BrowsePage() {
+  return (
+    <Suspense fallback={<AppLayout><p className="text-[14px] text-[#86868B] text-center py-12">불러오는 중...</p></AppLayout>}>
+      <BrowseContent />
+    </Suspense>
+  );
+}
+
+function BrowseContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
