@@ -25,6 +25,7 @@ function BrowseContent() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filterGenre, setFilterGenre] = useState("");
   const [myInterests, setMyInterests] = useState<Set<string>>(new Set());
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     loadStudents();
@@ -121,7 +122,8 @@ function BrowseContent() {
             return (
               <div
                 key={s.id}
-                className="bg-white rounded-2xl p-5 flex flex-col gap-3"
+                onClick={() => setSelectedStudent(s)}
+                className="bg-white rounded-2xl p-5 flex flex-col gap-3 cursor-pointer hover:ring-2 hover:ring-[#007AFF]/30 transition-all"
                 style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
               >
                 <div>
@@ -139,13 +141,91 @@ function BrowseContent() {
                     ))}
                   </div>
                 )}
-                {s.intro && <p className="text-[13px] text-[#1D1D1F]">{s.intro}</p>}
-                {s.game_concept && (
-                  <p className="text-[12px] text-[#86868B] line-clamp-2">{s.game_concept}</p>
+                {s.intro && <p className="text-[13px] text-[#1D1D1F] line-clamp-1">{s.intro}</p>}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <p className="text-[14px] text-[#86868B] col-span-full text-center py-12">검색 결과가 없습니다.</p>
+          )}
+        </div>
+
+        {/* Profile Modal */}
+        {selectedStudent && (() => {
+          const s = selectedStudent;
+          const skillsDisplay = s.part ? s.part.split(",").map((x: string) => x.trim()).filter(Boolean) : [];
+          return (
+            <div
+              className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+              onClick={() => setSelectedStudent(null)}
+            >
+              <div
+                className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-7 flex flex-col gap-5"
+                onClick={(e) => e.stopPropagation()}
+                style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[22px] font-bold text-[#1D1D1F]">{s.name}</p>
+                    <p className="text-[13px] font-medium text-[#86868B]">
+                      {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedStudent(null)}
+                    className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center text-[#86868B] hover:bg-[#ECECEE] transition-colors text-[18px]"
+                  >
+                    X
+                  </button>
+                </div>
+
+                {s.genres && s.genres.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">선호 장르</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {s.genres.map((g) => (
+                        <span key={g} className="h-[28px] px-3.5 bg-[#F5F5F7] rounded-[17px] text-[12px] font-medium text-[#86868B] flex items-center">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 )}
+
+                {s.intro && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">한줄 소개</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.intro}</p>
+                  </div>
+                )}
+
+                {s.favorite_games && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">좋아하는 게임</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.favorite_games}</p>
+                  </div>
+                )}
+
+                {s.game_concept && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">만들고 싶은 게임</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.game_concept}</p>
+                  </div>
+                )}
+
+                {s.collab_style && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">선호하는 협업 방식</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.collab_style}</p>
+                  </div>
+                )}
+
                 <button
-                  onClick={() => toggleInterest(s.id)}
-                  className={`w-full h-9 rounded-[10px] text-[13px] font-medium transition-colors ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleInterest(s.id);
+                  }}
+                  className={`w-full h-11 rounded-[10px] text-[14px] font-semibold transition-colors ${
                     myInterests.has(s.id)
                       ? "bg-[#007AFF] text-white"
                       : "bg-[#F5F5F7] text-[#007AFF] hover:bg-[#ECECEE]"
@@ -154,12 +234,9 @@ function BrowseContent() {
                   {myInterests.has(s.id) ? "관심 표시됨" : "관심 표시"}
                 </button>
               </div>
-            );
-          })}
-          {filtered.length === 0 && (
-            <p className="text-[14px] text-[#86868B] col-span-full text-center py-12">검색 결과가 없습니다.</p>
-          )}
-        </div>
+            </div>
+          );
+        })()}
       </LockGuard>
     </AppLayout>
   );
