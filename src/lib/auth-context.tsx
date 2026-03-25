@@ -8,6 +8,7 @@ interface AuthContextType {
   user: Student | null;
   isAdmin: boolean;
   isLocked: boolean;
+  isTeamBuildingOpen: boolean;
   ready: boolean;
   login: (name: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   adminLogin: (id: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Student | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [isTeamBuildingOpen, setIsTeamBuildingOpen] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -34,8 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function refreshLock() {
-    const { data } = await supabase.from("app_settings").select("is_locked").single();
-    if (data) setIsLocked(data.is_locked);
+    const { data } = await supabase.from("app_settings").select("is_locked, team_building_open").single();
+    if (data) {
+      setIsLocked(data.is_locked);
+      setIsTeamBuildingOpen(data.team_building_open);
+    }
   }
 
   async function refreshUser() {
@@ -83,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isLocked, ready, login, adminLogin, logout, refreshUser, refreshLock }}>
+    <AuthContext.Provider value={{ user, isAdmin, isLocked, isTeamBuildingOpen, ready, login, adminLogin, logout, refreshUser, refreshLock }}>
       {children}
     </AuthContext.Provider>
   );

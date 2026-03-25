@@ -6,6 +6,7 @@ export interface Student {
   intro: string | null;
   game_concept: string | null;
   collab_style: string | null;
+  favorite_games: string | null;
   team_id: string | null;
   created_at: string;
 }
@@ -42,6 +43,7 @@ export interface AppSettings {
   min_team_size: number;
   max_team_size: number;
   is_locked: boolean;
+  team_building_open: boolean;
   common_password: string;
   admin_id: string;
   admin_password: string;

@@ -9,6 +9,7 @@ import * as XLSX from "xlsx";
 export default function AdminPage() {
   const { isAdmin, refreshLock } = useAuth();
   const [isLocked, setIsLocked] = useState(false);
+  const [teamBuildingOpen, setTeamBuildingOpen] = useState(false);
   const [minSize, setMinSize] = useState(3);
   const [maxSize, setMaxSize] = useState(5);
   const [nameList, setNameList] = useState("");
@@ -26,6 +27,7 @@ export default function AdminPage() {
     const { data } = await supabase.from("app_settings").select("*").single();
     if (data) {
       setIsLocked(data.is_locked);
+      setTeamBuildingOpen(data.team_building_open);
       setMinSize(data.min_team_size);
       setMaxSize(data.max_team_size);
       setCommonPw(data.common_password);
@@ -34,6 +36,15 @@ export default function AdminPage() {
     setStudentCount(count || 0);
     const { data: students } = await supabase.from("students").select("name").order("name");
     if (students) setNameList(students.map((s) => s.name).join("\n"));
+  }
+
+  async function handleToggleTeamBuilding() {
+    const newOpen = !teamBuildingOpen;
+    if (newOpen && !confirm("팀 빌딩을 시작하시겠습니까? 수강생들이 인원 탐색, 구인구직, 팀 생성을 할 수 있게 됩니다.")) return;
+    if (!newOpen && !confirm("팀 빌딩을 닫으시겠습니까? 수강생들은 프로필 작성과 팀 현황 조회만 가능합니다.")) return;
+    await supabase.from("app_settings").update({ team_building_open: newOpen }).not("id", "is", null);
+    setTeamBuildingOpen(newOpen);
+    await refreshLock();
   }
 
   async function handleToggleLock() {
@@ -136,6 +147,31 @@ export default function AdminPage() {
       )}
 
       <div className="flex flex-col gap-6">
+        {/* Team Building Open */}
+        <div
+          className="bg-white rounded-2xl p-6 flex items-center gap-5"
+          style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+        >
+          <div className="flex-1">
+            <p className="text-[16px] font-semibold text-[#1D1D1F]">팀 빌딩 시작</p>
+            <p className="text-[13px] text-[#86868B]">
+              {teamBuildingOpen
+                ? "팀 빌딩이 진행 중입니다. 수강생들이 인원 탐색, 구인구직, 팀 생성을 할 수 있습니다."
+                : "현재 프로필 작성만 가능합니다. 시작하면 모든 팀 빌딩 기능이 열립니다."}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleTeamBuilding}
+            className={`h-11 px-5 rounded-[10px] text-[14px] font-semibold transition-colors shrink-0 ${
+              teamBuildingOpen
+                ? "bg-[#FF9500] hover:bg-[#E68600] text-white"
+                : "bg-[#007AFF] hover:bg-[#0066DD] text-white"
+            }`}
+          >
+            {teamBuildingOpen ? "팀 빌딩 닫기" : "팀 빌딩 시작"}
+          </button>
+        </div>
+
         {/* Lockdown */}
         <div
           className="bg-white rounded-2xl p-6 flex items-center gap-5"
@@ -149,7 +185,7 @@ export default function AdminPage() {
           </div>
           <button
             onClick={handleToggleLock}
-            className={`h-11 px-5 rounded-[10px] text-[14px] font-semibold transition-colors ${
+            className={`h-11 px-5 rounded-[10px] text-[14px] font-semibold transition-colors shrink-0 ${
               isLocked
                 ? "bg-[#34C759] hover:bg-[#2DB84D] text-white"
                 : "bg-[#FF3B30] hover:bg-[#E5342B] text-white"
