@@ -6,13 +6,21 @@ import AppLayout from "@/components/app-layout";
 import { supabase } from "@/lib/supabase";
 import { Team, Student } from "@/lib/types";
 
+const CARD_SHADOW = "0 4px 24px rgba(0,0,0,0.4)";
+
 interface TeamWithMembers extends Team {
   members: Student[];
 }
 
+const STATUS_INFO = {
+  building: { text: "🗡 결성중",    bg: "#2E1818", color: "#E05050", border: "#5A2A2A" },
+  pending:  { text: "🔮 원정 신청", bg: "#0E1A2E", color: "#5090D8", border: "#2A3A5A" },
+  approved: { text: "✨ 원정 확정", bg: "#0A1810", color: "#38C870", border: "#1A4030" },
+};
+
 export default function TeamsPage() {
   return (
-    <Suspense fallback={<AppLayout><h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">팀 현황</h1><p className="text-[14px] text-[#86868B] text-center py-12">불러오는 중...</p></AppLayout>}>
+    <Suspense fallback={<AppLayout><h1 className="text-[28px] font-bold mb-6" style={{ color: "#E0B847", fontFamily: "'Playfair Display', serif" }}>파티 현황</h1><p className="text-[14px] text-center py-12" style={{ color: "#4A6A8A" }}>불러오는 중...</p></AppLayout>}>
       <TeamsContent />
     </Suspense>
   );
@@ -28,9 +36,7 @@ function TeamsContent() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filterStatus, setFilterStatus] = useState<"" | "building" | "pending" | "approved">("");
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     try {
@@ -54,7 +60,7 @@ function TeamsContent() {
         setTeams(withMembers);
       }
     } catch (e) {
-      console.error("팀 현황 로드 오류:", e);
+      console.error("파티 현황 로드 오류:", e);
     } finally {
       setLoading(false);
     }
@@ -65,64 +71,66 @@ function TeamsContent() {
   if (loading) {
     return (
       <AppLayout>
-        <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">팀 현황</h1>
-        <p className="text-[14px] text-[#86868B] text-center py-12">불러오는 중...</p>
+        <h1 className="text-[28px] font-bold mb-6" style={{ color: "#E0B847", fontFamily: "'Playfair Display', serif" }}>파티 현황</h1>
+        <p className="text-[14px] text-center py-12" style={{ color: "#4A6A8A" }}>불러오는 중...</p>
       </AppLayout>
     );
   }
 
   return (
     <AppLayout>
-      <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">팀 현황</h1>
+      <h1 className="text-[28px] font-bold mb-6" style={{ color: "#E0B847", fontFamily: "'Playfair Display', serif" }}>파티 현황</h1>
 
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-2xl p-5 text-center" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}>
-          <p className="text-[32px] font-bold text-[#007AFF]">{teams.length}</p>
-          <p className="text-[13px] font-medium text-[#86868B]">전체 팀</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 text-center" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}>
-          <p className="text-[32px] font-bold text-[#007AFF]">{assignedCount}</p>
-          <p className="text-[13px] font-medium text-[#86868B]">배정 완료</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 text-center" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}>
-          <p className="text-[32px] font-bold text-[#FF9500]">{unassigned}</p>
-          <p className="text-[13px] font-medium text-[#86868B]">미배정</p>
-        </div>
+        {[
+          { value: teams.length, label: "전체 파티" },
+          { value: assignedCount, label: "파티 합류" },
+          { value: unassigned, label: "모험가 대기", warn: true },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl p-5 text-center" style={{ background: "#111E30", border: `1px solid ${s.warn ? "#5A3A14" : "#2A4060"}`, boxShadow: CARD_SHADOW }}>
+            <p className="text-[32px] font-bold" style={{ color: s.warn ? "#E8962A" : "#E0B847", fontFamily: "'Playfair Display', serif" }}>{s.value}</p>
+            <p className="text-[12px] font-medium mt-1" style={{ color: "#4A6A8A" }}>{s.label}</p>
+          </div>
+        ))}
       </div>
 
+      {/* Search */}
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="팀 이름 또는 팀원 이름으로 검색"
-        className="w-full h-11 bg-white rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30 mb-4"
-        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+        placeholder="파티 이름 또는 파티원 이름으로 검색"
+        className="w-full h-11 rounded-[10px] px-4 text-[14px] outline-none mb-4"
+        style={{ background: "#111E30", border: "1px solid #2A4060", color: "#E8DCBC", caretColor: "#C8952A" }}
       />
 
+      {/* Filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {[
           { value: "", label: "전체" },
-          { value: "building", label: "팀빌딩 중" },
-          { value: "pending", label: "승인 신청" },
-          { value: "approved", label: "승인 완료" },
+          { value: "building", label: "🗡 결성중" },
+          { value: "pending",  label: "🔮 원정 신청" },
+          { value: "approved", label: "✨ 원정 확정" },
         ].map((f) => (
           <button
             key={f.value}
             onClick={() => setFilterStatus(f.value as "" | "building" | "pending" | "approved")}
-            className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
-              filterStatus === f.value ? "bg-[#007AFF] text-white" : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
-            }`}
-            style={filterStatus !== f.value ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+            className="h-[34px] px-4 rounded-[17px] text-[12px] font-medium transition-colors"
+            style={
+              filterStatus === f.value
+                ? { background: "#C8952A", color: "#0D1520" }
+                : { background: "#111E30", color: "#4A6A8A", border: "1px solid #2A4060" }
+            }
           >
             {f.label}
             {f.value !== "" && (
-              <span className="ml-1.5">
-                ({teams.filter((t) => t.status === f.value).length})
-              </span>
+              <span className="ml-1.5">({teams.filter((t) => t.status === f.value).length})</span>
             )}
           </button>
         ))}
       </div>
 
+      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {teams.filter((t) => {
           if (filterStatus && t.status !== filterStatus) return false;
@@ -130,44 +138,31 @@ function TeamsContent() {
           const q = search.trim().toLowerCase();
           return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));
         }).map((t) => {
-          const ratio = t.members.length / settings.max_team_size;
-          const badgeBg = ratio >= 1 ? "#E8F5E9" : ratio >= 0.5 ? "#E3F2FD" : "#FFF3E0";
-          const badgeColor = ratio >= 1 ? "#2E7D32" : ratio >= 0.5 ? "#1565C0" : "#E65100";
-          const statusInfo = {
-            building: { text: "팀빌딩 중", bg: "#FFF3E0", color: "#E65100" },
-            pending:  { text: "승인 신청", bg: "#E3F2FD", color: "#1565C0" },
-            approved: { text: "승인 완료", bg: "#E8F5E9", color: "#2E7D32" },
-          }[t.status] || { text: "팀빌딩 중", bg: "#FFF3E0", color: "#E65100" };
+          const si = STATUS_INFO[t.status] || STATUS_INFO.building;
           return (
             <div
               key={t.id}
-              className="bg-white rounded-2xl p-5 flex flex-col gap-2.5"
-              style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+              className="rounded-2xl p-5 flex flex-col gap-2.5"
+              style={{ background: "#111E30", border: `1px solid ${si.border}`, boxShadow: CARD_SHADOW }}
             >
               <div className="flex items-center gap-2">
-                <span className="text-[16px] font-semibold text-[#1D1D1F] flex-1">{t.name}</span>
-                <span
-                  className="h-[22px] px-2.5 rounded-[17px] text-[10px] font-semibold flex items-center"
-                  style={{ backgroundColor: statusInfo.bg, color: statusInfo.color }}
-                >
-                  {statusInfo.text}
+                <span className="text-[15px] font-semibold flex-1" style={{ color: "#E8DCBC", fontFamily: "'Playfair Display', serif" }}>{t.name}</span>
+                <span className="h-[22px] px-2.5 rounded-[4px] text-[10px] font-semibold flex items-center" style={{ background: si.bg, color: si.color, border: `1px solid ${si.border}` }}>
+                  {si.text}
                 </span>
-                <span
-                  className="h-[22px] px-2.5 rounded-[17px] text-[10px] font-semibold flex items-center"
-                  style={{ backgroundColor: badgeBg, color: badgeColor }}
-                >
+                <span className="h-[22px] px-2.5 rounded-[4px] text-[10px] font-semibold flex items-center" style={{ background: "#162030", color: "#4A6A8A", border: "1px solid #2A4060" }}>
                   {t.members.length}/{settings.max_team_size}명
                 </span>
               </div>
-              {t.description && <p className="text-[13px] text-[#86868B]">{t.description}</p>}
-              <p className="text-[12px] text-[#AEAEB2]">
+              {t.description && <p className="text-[13px]" style={{ color: "#4A6A8A" }}>{t.description}</p>}
+              <p className="text-[12px]" style={{ color: "#3A5A78" }}>
                 {t.members.map((m) => m.name).join(", ")}
               </p>
             </div>
           );
         })}
         {teams.length === 0 && (
-          <p className="text-[14px] text-[#86868B] col-span-full text-center py-12">아직 생성된 팀이 없습니다.</p>
+          <p className="text-[14px] col-span-full text-center py-12" style={{ color: "#4A6A8A" }}>아직 결성된 파티가 없습니다.</p>
         )}
       </div>
     </AppLayout>

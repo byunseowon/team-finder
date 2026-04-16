@@ -38,49 +38,71 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7]">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0D1520" }}>
       <form
         onSubmit={handleSubmit}
-        className="w-[400px] bg-white rounded-[20px] p-12 flex flex-col gap-6"
-        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+        className="w-[400px] rounded-[16px] p-12 flex flex-col gap-6"
+        style={{ background: "#111E30", border: "1px solid #2A4060", boxShadow: "0 8px 40px rgba(0,0,0,0.6)" }}
       >
-        <div className="flex flex-col items-center gap-1.5">
-          <div className="w-14 h-14 bg-[#007AFF] rounded-[14px] flex items-center justify-center">
-            <span className="text-white text-[22px] font-bold">TF</span>
+        {/* Header */}
+        <div className="flex flex-col items-center gap-2">
+          <div
+            className="w-14 h-14 rounded-[14px] flex items-center justify-center"
+            style={{ background: "#1A2E48", border: "2px solid #C8952A" }}
+          >
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#E0B847" }}>TF</span>
           </div>
-          <h1 className="text-[28px] font-bold text-[#1D1D1F]">Team Finder</h1>
-          <p className="text-[15px] text-[#86868B]">Unreal 7기 팀 빌딩</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: "#E0B847" }}>
+            Team Finder
+          </h1>
+          <p className="text-[14px]" style={{ color: "#4A6A8A" }}>Unreal 7기 파티 결성</p>
         </div>
 
+        {/* Form */}
         <div className="flex flex-col gap-3">
-          <label className="text-[13px] font-medium text-[#86868B]">
-            {isAdminMode ? "관리자 ID" : "이름"}
+          <label className="text-[12px] font-medium" style={{ color: "#4A6A8A" }}>
+            {isAdminMode ? "길드마스터 ID" : "모험가 이름"}
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={isAdminMode ? "관리자 ID를 입력하세요" : "사전 등록된 이름을 입력하세요"}
-            className="w-full h-12 bg-[#F5F5F7] rounded-xl px-4 text-[15px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+            placeholder={isAdminMode ? "ID를 입력하세요" : "사전 등록된 이름을 입력하세요"}
+            className="w-full h-12 rounded-xl px-4 text-[14px] outline-none"
+            style={{
+              background: "#162030",
+              border: "1px solid #2A4060",
+              color: "#E8DCBC",
+              caretColor: "#C8952A",
+            }}
           />
-          <label className="text-[13px] font-medium text-[#86868B]">비밀번호</label>
+          <label className="text-[12px] font-medium" style={{ color: "#4A6A8A" }}>
+            {isAdminMode ? "비밀번호" : "길드 암호"}
+          </label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isAdminMode ? "관리자 비밀번호" : "공통 비밀번호"}
-            className="w-full h-12 bg-[#F5F5F7] rounded-xl px-4 text-[15px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+            placeholder={isAdminMode ? "비밀번호" : "길드 암호를 입력하세요"}
+            className="w-full h-12 rounded-xl px-4 text-[14px] outline-none"
+            style={{
+              background: "#162030",
+              border: "1px solid #2A4060",
+              color: "#E8DCBC",
+              caretColor: "#C8952A",
+            }}
           />
         </div>
 
-        {error && <p className="text-[13px] text-[#FF3B30] text-center">{error}</p>}
+        {error && <p className="text-[13px] text-center" style={{ color: "#E05050" }}>{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-[50px] bg-[#007AFF] hover:bg-[#0066DD] text-white text-[16px] font-semibold rounded-xl transition-colors disabled:opacity-50"
+          className="w-full h-[48px] text-[15px] font-semibold rounded-xl transition-colors disabled:opacity-50"
+          style={{ background: "#C8952A", color: "#0D1520" }}
         >
-          {loading ? "로그인 중..." : "로그인"}
+          {loading ? "입장 중..." : "입장"}
         </button>
 
         <button
@@ -91,9 +113,10 @@ export default function LoginPage() {
             setPassword("");
             setError("");
           }}
-          className="text-[13px] text-[#AEAEB2] hover:text-[#86868B] text-center transition-colors"
+          className="text-[12px] text-center transition-colors"
+          style={{ color: "#3A5A78" }}
         >
-          {isAdminMode ? "수강생 로그인으로 돌아가기" : "관리자 계정으로 로그인"}
+          {isAdminMode ? "모험가 로그인으로 돌아가기" : "길드마스터 계정으로 로그인"}
         </button>
       </form>
     </div>
