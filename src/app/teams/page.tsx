@@ -26,6 +26,7 @@ function TeamsContent() {
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [filterStatus, setFilterStatus] = useState<"" | "building" | "pending" | "approved">("");
 
   useEffect(() => {
     loadData();
@@ -97,8 +98,34 @@ function TeamsContent() {
         style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
       />
 
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {[
+          { value: "", label: "전체" },
+          { value: "building", label: "팀빌딩 중" },
+          { value: "pending", label: "승인 신청" },
+          { value: "approved", label: "승인 완료" },
+        ].map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setFilterStatus(f.value as "" | "building" | "pending" | "approved")}
+            className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
+              filterStatus === f.value ? "bg-[#007AFF] text-white" : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+            }`}
+            style={filterStatus !== f.value ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+          >
+            {f.label}
+            {f.value !== "" && (
+              <span className="ml-1.5">
+                ({teams.filter((t) => t.status === f.value).length})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {teams.filter((t) => {
+          if (filterStatus && t.status !== filterStatus) return false;
           if (!search.trim()) return true;
           const q = search.trim().toLowerCase();
           return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));

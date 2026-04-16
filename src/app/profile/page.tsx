@@ -18,6 +18,9 @@ export default function ProfilePage() {
   const [favoriteGames, setFavoriteGames] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwMsg, setPwMsg] = useState({ text: "", ok: true });
 
   useEffect(() => {
     if (user) {
@@ -50,6 +53,17 @@ export default function ProfilePage() {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleChangePassword() {
+    if (!user) return;
+    if (newPw.length < 4) { setPwMsg({ text: "비밀번호는 4자 이상이어야 합니다.", ok: false }); return; }
+    if (newPw !== confirmPw) { setPwMsg({ text: "비밀번호가 일치하지 않습니다.", ok: false }); return; }
+    await supabase.from("students").update({ password: newPw }).eq("id", user.id);
+    setNewPw("");
+    setConfirmPw("");
+    setPwMsg({ text: "비밀번호가 변경되었습니다.", ok: true });
+    setTimeout(() => setPwMsg({ text: "", ok: true }), 3000);
   }
 
   if (!user) {
@@ -164,6 +178,43 @@ export default function ProfilePage() {
             {saving ? "저장 중..." : "저장"}
           </button>
           {saved && <span className="text-[13px] text-[#34C759] self-center">저장되었습니다</span>}
+        </div>
+      </div>
+
+      {/* 비밀번호 변경 */}
+      <div
+        className="bg-white rounded-2xl p-7 flex flex-col gap-4 mt-4"
+        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+      >
+        <p className="text-[16px] font-semibold text-[#1D1D1F]">비밀번호 변경</p>
+        <p className="text-[13px] text-[#86868B]">개인 비밀번호를 설정하면 공통 비밀번호 대신 개인 비밀번호로 로그인합니다.</p>
+        <div className="flex flex-col gap-3">
+          <input
+            type="password"
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
+            placeholder="새 비밀번호 (4자 이상)"
+            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+          />
+          <input
+            type="password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            placeholder="새 비밀번호 확인"
+            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleChangePassword}
+            disabled={!newPw || !confirmPw}
+            className="h-10 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[14px] font-semibold rounded-[10px] transition-colors disabled:opacity-50"
+          >
+            변경
+          </button>
+          {pwMsg.text && (
+            <span className={`text-[13px] ${pwMsg.ok ? "text-[#34C759]" : "text-[#FF3B30]"}`}>{pwMsg.text}</span>
+          )}
         </div>
       </div>
     </AppLayout>

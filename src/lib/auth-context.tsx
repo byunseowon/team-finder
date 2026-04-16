@@ -53,13 +53,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(name: string, password: string) {
-    const { data: settings } = await supabase.from("app_settings").select("common_password").single();
-    if (!settings || password !== settings.common_password) {
-      return { ok: false, error: "비밀번호가 올바르지 않습니다." };
-    }
     const { data: student } = await supabase.from("students").select("*").eq("name", name.trim()).single();
     if (!student) {
       return { ok: false, error: "등록되지 않은 이름입니다." };
+    }
+    // 개인 비밀번호가 있으면 개인 비밀번호로, 없으면 공통 비밀번호로 확인
+    if (student.password) {
+      if (password !== student.password) {
+        return { ok: false, error: "비밀번호가 올바르지 않습니다." };
+      }
+    } else {
+      const { data: settings } = await supabase.from("app_settings").select("common_password").single();
+      if (!settings || password !== settings.common_password) {
+        return { ok: false, error: "비밀번호가 올바르지 않습니다." };
+      }
     }
     setUser(student);
     setIsAdmin(false);
