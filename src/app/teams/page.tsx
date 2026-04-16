@@ -106,6 +106,11 @@ function TeamsContent() {
           const ratio = t.members.length / settings.max_team_size;
           const badgeBg = ratio >= 1 ? "#E8F5E9" : ratio >= 0.5 ? "#E3F2FD" : "#FFF3E0";
           const badgeColor = ratio >= 1 ? "#2E7D32" : ratio >= 0.5 ? "#1565C0" : "#E65100";
+          const statusInfo = {
+            building: { text: "팀빌딩 중", bg: "#FFF3E0", color: "#E65100" },
+            pending:  { text: "승인 신청", bg: "#E3F2FD", color: "#1565C0" },
+            approved: { text: "승인 완료", bg: "#E8F5E9", color: "#2E7D32" },
+          }[t.status] || { text: "팀빌딩 중", bg: "#FFF3E0", color: "#E65100" };
           return (
             <div
               key={t.id}
@@ -114,6 +119,12 @@ function TeamsContent() {
             >
               <div className="flex items-center gap-2">
                 <span className="text-[16px] font-semibold text-[#1D1D1F] flex-1">{t.name}</span>
+                <span
+                  className="h-[22px] px-2.5 rounded-[17px] text-[10px] font-semibold flex items-center"
+                  style={{ backgroundColor: statusInfo.bg, color: statusInfo.color }}
+                >
+                  {statusInfo.text}
+                </span>
                 <span
                   className="h-[22px] px-2.5 rounded-[17px] text-[10px] font-semibold flex items-center"
                   style={{ backgroundColor: badgeBg, color: badgeColor }}

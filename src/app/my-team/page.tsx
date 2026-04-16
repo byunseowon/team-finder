@@ -7,6 +7,12 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Student, Team } from "@/lib/types";
 
+const STATUS_INFO = {
+  building: { text: "팀빌딩 중", bg: "#FFF3E0", color: "#E65100" },
+  pending:  { text: "승인 신청", bg: "#E3F2FD", color: "#1565C0" },
+  approved: { text: "승인 완료", bg: "#E8F5E9", color: "#2E7D32" },
+};
+
 export default function MyTeamPage() {
   const { user, refreshUser } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
@@ -15,7 +21,7 @@ export default function MyTeamPage() {
   const [teamName, setTeamName] = useState("");
   const [teamDesc, setTeamDesc] = useState("");
   const [creating, setCreating] = useState(false);
-  const [settings, setSettings] = useState({ max_team_size: 5 });
+  const [settings, setSettings] = useState({ min_team_size: 2, max_team_size: 5 });
 
   useEffect(() => {
     loadSettings();
@@ -30,7 +36,7 @@ export default function MyTeamPage() {
   }, [user]);
 
   async function loadSettings() {
-    const { data } = await supabase.from("app_settings").select("max_team_size").single();
+    const { data } = await supabase.from("app_settings").select("min_team_size, max_team_size").single();
     if (data) setSettings(data);
   }
 
@@ -46,7 +52,7 @@ export default function MyTeamPage() {
     setCreating(true);
     const { data: newTeam } = await supabase
       .from("teams")
-      .insert({ name: teamName, description: teamDesc, leader_id: user.id })
+      .insert({ name: teamName, description: teamDesc, leader_id: user.id, status: "building" })
       .select()
       .single();
     if (newTeam) {
@@ -61,6 +67,7 @@ export default function MyTeamPage() {
 
   async function handleLeave() {
     if (!user || !team) return;
+    if (team.status === "approved") { alert("승인된 팀은 탈퇴할 수 없습니다."); return; }
     if (!confirm("정말 팀을 탈퇴하시겠습니까?")) return;
     await supabase.from("students").update({ team_id: null }).eq("id", user.id);
     if (team.leader_id === user.id) {
@@ -75,7 +82,7 @@ export default function MyTeamPage() {
   }
 
   async function handleAddMember() {
-    if (!team) return;
+    if (!team || team.status !== "building") return;
     const name = prompt("추가할 수강생 이름을 입력하세요:");
     if (!name) return;
     const { data: student } = await supabase.from("students").select("*").eq("name", name.trim()).single();
@@ -85,6 +92,28 @@ export default function MyTeamPage() {
     await supabase.from("students").update({ team_id: team.id }).eq("id", student.id);
     await loadTeam(team.id);
   }
+
+  async function handleRequestApproval() {
+    if (!team) return;
+    if (members.length < settings.min_team_size || members.length > settings.max_team_size) {
+      alert(`팀 인원이 ${settings.min_team_size}명 이상 ${settings.max_team_size}명 이하일 때만 승인 신청이 가능합니다.`);
+      return;
+    }
+    if (!confirm("승인 신청 후에는 팀원을 변경할 수 없습니다. 진행하시겠습니까?")) return;
+    await supabase.from("teams").update({ status: "pending" }).eq("id", team.id);
+    await loadTeam(team.id);
+  }
+
+  async function handleCancelRequest() {
+    if (!team) return;
+    if (!confirm("승인 신청을 취소하고 팀빌딩 중으로 돌아가시겠습니까?")) return;
+    await supabase.from("teams").update({ status: "building" }).eq("id", team.id);
+    await loadTeam(team.id);
+  }
+
+  const isLeader = user && team?.leader_id === user.id;
+  const isEditable = team?.status === "building";
+  const st = team ? STATUS_INFO[team.status] : null;
 
   if (!user) {
     return (
@@ -151,18 +180,48 @@ export default function MyTeamPage() {
             className="bg-white rounded-2xl p-7 flex flex-col gap-5"
             style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
           >
+            {/* 헤더 */}
             <div className="flex items-center gap-3">
               <h2 className="text-[20px] font-bold text-[#1D1D1F] flex-1">{team.name}</h2>
+              {st && (
+                <span
+                  className="h-7 px-3.5 rounded-[17px] text-[12px] font-semibold flex items-center"
+                  style={{ backgroundColor: st.bg, color: st.color }}
+                >
+                  {st.text}
+                </span>
+              )}
               <span className="h-7 px-3.5 bg-[#E3F2FD] rounded-[17px] text-[12px] font-semibold text-[#1565C0] flex items-center">
                 {members.length}/{settings.max_team_size}명
               </span>
             </div>
+
             {team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
+
+            {/* 승인 신청 안내 */}
+            {team.status === "building" && isLeader && (
+              <div className="bg-[#FFF3E0] rounded-[10px] px-4 py-3 text-[13px] text-[#E65100]">
+                승인 신청은 팀원이 {settings.min_team_size}명 이상 {settings.max_team_size}명 이하일 때 가능합니다.
+                현재 {members.length}명입니다.
+              </div>
+            )}
+            {team.status === "pending" && (
+              <div className="bg-[#E3F2FD] rounded-[10px] px-4 py-3 text-[13px] text-[#1565C0]">
+                승인 신청이 완료되었습니다. 운영진의 승인을 기다리는 중입니다.
+              </div>
+            )}
+            {team.status === "approved" && (
+              <div className="bg-[#E8F5E9] rounded-[10px] px-4 py-3 text-[13px] text-[#2E7D32]">
+                팀 구성이 승인되었습니다. 팀 구성을 변경할 수 없습니다.
+              </div>
+            )}
+
             <div className="w-full h-px bg-[#F5F5F7]" />
 
+            {/* 팀원 목록 */}
             <div className="flex items-center justify-between">
               <span className="text-[14px] font-semibold text-[#1D1D1F]">팀원</span>
-              {team.leader_id === user.id && members.length < settings.max_team_size && (
+              {isLeader && isEditable && members.length < settings.max_team_size && (
                 <button
                   onClick={handleAddMember}
                   className="text-[13px] text-[#007AFF] font-medium hover:underline"
@@ -186,13 +245,33 @@ export default function MyTeamPage() {
               ))}
             </div>
 
-            <div className="pt-2">
-              <button
-                onClick={handleLeave}
-                className="h-10 px-5 bg-[#F5F5F7] text-[#FF3B30] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
-              >
-                팀 탈퇴
-              </button>
+            {/* 하단 버튼 */}
+            <div className="flex gap-2.5 pt-2 flex-wrap">
+              {isLeader && team.status === "building" && (
+                <button
+                  onClick={handleRequestApproval}
+                  disabled={members.length < settings.min_team_size || members.length > settings.max_team_size}
+                  className="h-10 px-5 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[14px] font-semibold rounded-[10px] transition-colors disabled:opacity-40"
+                >
+                  승인 신청
+                </button>
+              )}
+              {isLeader && team.status === "pending" && (
+                <button
+                  onClick={handleCancelRequest}
+                  className="h-10 px-5 bg-[#F5F5F7] text-[#E65100] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                >
+                  신청 취소
+                </button>
+              )}
+              {team.status !== "approved" && (
+                <button
+                  onClick={handleLeave}
+                  className="h-10 px-5 bg-[#F5F5F7] text-[#FF3B30] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                >
+                  팀 탈퇴
+                </button>
+              )}
             </div>
           </div>
         )}

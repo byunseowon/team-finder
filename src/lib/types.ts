@@ -16,6 +16,7 @@ export interface Team {
   name: string;
   description: string | null;
   leader_id: string;
+  status: "building" | "pending" | "approved";
   created_at: string;
 }
 

@@ -18,10 +18,37 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingTeams, setPendingTeams] = useState<{ id: string; name: string; members: { name: string; part: string | null }[] }[]>([]);
+  const [approvedTeams, setApprovedTeams] = useState<{ id: string; name: string; members: { name: string; part: string | null }[] }[]>([]);
 
   useEffect(() => {
-    if (isAdmin) loadSettings();
+    if (isAdmin) { loadSettings(); loadTeams(); }
   }, [isAdmin]);
+
+  async function loadTeams() {
+    const { data: teams } = await supabase.from("teams").select("id, name, status").order("created_at");
+    if (!teams) return;
+    const withMembers = await Promise.all(
+      teams.map(async (t) => {
+        const { data: members } = await supabase.from("students").select("name, part").eq("team_id", t.id).order("name");
+        return { ...t, members: members || [] };
+      })
+    );
+    setPendingTeams(withMembers.filter((t) => t.status === "pending"));
+    setApprovedTeams(withMembers.filter((t) => t.status === "approved"));
+  }
+
+  async function handleApprove(teamId: string) {
+    await supabase.from("teams").update({ status: "approved" }).eq("id", teamId);
+    showMsg("팀이 승인되었습니다.");
+    loadTeams();
+  }
+
+  async function handleCancelApproval(teamId: string) {
+    await supabase.from("teams").update({ status: "building" }).eq("id", teamId);
+    showMsg("승인이 취소되었습니다.");
+    loadTeams();
+  }
 
   async function loadSettings() {
     const { data } = await supabase.from("app_settings").select("*").single();
@@ -147,6 +174,56 @@ export default function AdminPage() {
       )}
 
       <div className="flex flex-col gap-6">
+        {/* 승인 신청 목록 */}
+        {pendingTeams.length > 0 && (
+          <div
+            className="bg-white rounded-2xl p-6 flex flex-col gap-4"
+            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+          >
+            <div className="flex items-center gap-2">
+              <p className="text-[16px] font-semibold text-[#1D1D1F] flex-1">승인 신청 ({pendingTeams.length}건)</p>
+            </div>
+            {pendingTeams.map((t) => (
+              <div key={t.id} className="flex items-center gap-4 bg-[#F5F5F7] rounded-[10px] px-4 py-3">
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold text-[#1D1D1F]">{t.name}</p>
+                  <p className="text-[12px] text-[#86868B]">{t.members.map((m) => m.name).join(", ")} ({t.members.length}명)</p>
+                </div>
+                <button
+                  onClick={() => handleApprove(t.id)}
+                  className="h-9 px-4 bg-[#34C759] hover:bg-[#2DB84D] text-white text-[13px] font-semibold rounded-[10px] transition-colors"
+                >
+                  승인
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 승인 완료 목록 */}
+        {approvedTeams.length > 0 && (
+          <div
+            className="bg-white rounded-2xl p-6 flex flex-col gap-4"
+            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+          >
+            <p className="text-[16px] font-semibold text-[#1D1D1F]">승인 완료 ({approvedTeams.length}팀)</p>
+            {approvedTeams.map((t) => (
+              <div key={t.id} className="flex items-center gap-4 bg-[#E8F5E9] rounded-[10px] px-4 py-3">
+                <div className="flex-1">
+                  <p className="text-[14px] font-semibold text-[#1D1D1F]">{t.name}</p>
+                  <p className="text-[12px] text-[#86868B]">{t.members.map((m) => m.name).join(", ")} ({t.members.length}명)</p>
+                </div>
+                <button
+                  onClick={() => handleCancelApproval(t.id)}
+                  className="h-9 px-4 bg-[#F5F5F7] hover:bg-[#ECECEE] text-[#FF3B30] text-[13px] font-medium rounded-[10px] transition-colors"
+                >
+                  승인 취소
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Team Building Open */}
         <div
           className="bg-white rounded-2xl p-6 flex items-center gap-5"
