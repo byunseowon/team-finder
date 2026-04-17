@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Team Finder - Unreal 7기",
-  description: "Unreal 7기 파티 결성 웹앱",
+  description: "Unreal 7기 팀 빌딩 웹앱",
 };
 
 export default function RootLayout({
@@ -17,12 +17,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>{children}</AuthProvider>
       </body>

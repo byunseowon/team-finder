@@ -8,12 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Student } from "@/lib/types";
 
-const CARD_SHADOW = "0 4px 24px rgba(0,0,0,0.4)";
 const GENRE_OPTIONS = ["RPG", "FPS", "액션", "퍼즐", "시뮬레이션", "플랫포머", "공포", "레이싱", "스포츠", "기타"];
 
 export default function BrowsePage() {
   return (
-    <Suspense fallback={<AppLayout><p className="text-[14px] text-center py-12" style={{ color: "#4A6A8A" }}>불러오는 중...</p></AppLayout>}>
+    <Suspense fallback={<AppLayout><p className="text-[14px] text-[#86868B] text-center py-12">불러오는 중...</p></AppLayout>}>
       <BrowseContent />
     </Suspense>
   );
@@ -40,14 +39,22 @@ function BrowseContent() {
 
   async function loadMyInterests() {
     if (!user) return;
-    const { data } = await supabase.from("interests").select("to_student_id").eq("from_student_id", user.id).not("to_student_id", "is", null);
+    const { data } = await supabase
+      .from("interests")
+      .select("to_student_id")
+      .eq("from_student_id", user.id)
+      .not("to_student_id", "is", null);
     if (data) setMyInterests(new Set(data.map((d) => d.to_student_id!)));
   }
 
   async function toggleInterest(targetId: string) {
     if (!user) return;
     if (myInterests.has(targetId)) {
-      await supabase.from("interests").delete().eq("from_student_id", user.id).eq("to_student_id", targetId);
+      await supabase
+        .from("interests")
+        .delete()
+        .eq("from_student_id", user.id)
+        .eq("to_student_id", targetId);
     } else {
       await supabase.from("interests").insert({ from_student_id: user.id, to_student_id: targetId });
     }
@@ -58,7 +65,9 @@ function BrowseContent() {
     if (user && s.id === user.id) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!s.name.toLowerCase().includes(q) && !s.game_concept?.toLowerCase().includes(q)) return false;
+      const nameMatch = s.name.toLowerCase().includes(q);
+      const gameMatch = s.game_concept?.toLowerCase().includes(q);
+      if (!nameMatch && !gameMatch) return false;
     }
     if (filterGenre && (!s.genres || !s.genres.includes(filterGenre))) return false;
     return true;
@@ -67,23 +76,27 @@ function BrowseContent() {
   return (
     <AppLayout>
       <LockGuard>
-        <h1 className="text-[28px] font-bold mb-6" style={{ color: "#E0B847", fontFamily: "'Playfair Display', serif" }}>모험가 탐색</h1>
+        <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">인원 탐색</h1>
 
         <div className="flex gap-3 mb-4">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 또는 희망 게임으로 검색..."
-            className="flex-1 h-10 rounded-[10px] px-4 text-[13px] outline-none"
-            style={{ background: "#111E30", border: "1px solid #2A4060", color: "#E8DCBC", caretColor: "#C8952A" }}
+            className="flex-1 h-10 bg-white rounded-[10px] px-4 text-[13px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
           />
         </div>
 
         <div className="flex gap-2 mb-6 flex-wrap">
           <button
             onClick={() => setFilterGenre("")}
-            className="h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors"
-            style={filterGenre === "" ? { background: "#C8952A", color: "#0D1520" } : { background: "#111E30", color: "#4A6A8A", border: "1px solid #2A4060" }}
+            className={`h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors ${
+              filterGenre === ""
+                ? "bg-[#007AFF] text-white"
+                : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+            }`}
+            style={filterGenre !== "" ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
           >
             전체
           </button>
@@ -91,8 +104,12 @@ function BrowseContent() {
             <button
               key={g}
               onClick={() => setFilterGenre(filterGenre === g ? "" : g)}
-              className="h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors"
-              style={filterGenre === g ? { background: "#C8952A", color: "#0D1520" } : { background: "#111E30", color: "#4A6A8A", border: "1px solid #2A4060" }}
+              className={`h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors ${
+                filterGenre === g
+                  ? "bg-[#007AFF] text-white"
+                  : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+              }`}
+              style={filterGenre !== g ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
             >
               {g}
             </button>
@@ -106,85 +123,113 @@ function BrowseContent() {
               <div
                 key={s.id}
                 onClick={() => setSelectedStudent(s)}
-                className="rounded-2xl p-5 flex flex-col gap-3 cursor-pointer transition-all"
-                style={{ background: "#111E30", border: "1px solid #2A4060", boxShadow: CARD_SHADOW }}
+                className="bg-white rounded-2xl p-5 flex flex-col gap-3 cursor-pointer hover:ring-2 hover:ring-[#007AFF]/30 transition-all"
+                style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
               >
                 <div>
-                  <p className="text-[16px] font-semibold" style={{ color: "#E8DCBC", fontFamily: "'Playfair Display', serif" }}>{s.name}</p>
-                  <p className="text-[12px] font-medium" style={{ color: "#4A6A8A" }}>
+                  <p className="text-[16px] font-semibold text-[#1D1D1F]">{s.name}</p>
+                  <p className="text-[12px] font-medium text-[#86868B]">
                     {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
                   </p>
                 </div>
                 {s.genres && s.genres.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
                     {s.genres.map((g) => (
-                      <span key={g} className="h-[26px] px-3 rounded-[4px] text-[11px] font-medium flex items-center" style={{ background: "#162030", color: "#4A6A8A", border: "1px solid #2A4060" }}>
+                      <span key={g} className="h-[26px] px-3 bg-[#F5F5F7] rounded-[17px] text-[11px] font-medium text-[#86868B] flex items-center">
                         {g}
                       </span>
                     ))}
                   </div>
                 )}
-                {s.intro && <p className="text-[13px] line-clamp-1" style={{ color: "#E8DCBC" }}>{s.intro}</p>}
+                {s.intro && <p className="text-[13px] text-[#1D1D1F] line-clamp-1">{s.intro}</p>}
               </div>
             );
           })}
           {filtered.length === 0 && (
-            <p className="text-[14px] col-span-full text-center py-12" style={{ color: "#4A6A8A" }}>검색 결과가 없습니다.</p>
+            <p className="text-[14px] text-[#86868B] col-span-full text-center py-12">검색 결과가 없습니다.</p>
           )}
         </div>
 
-        {/* 프로필 모달 */}
+        {/* Profile Modal */}
         {selectedStudent && (() => {
           const s = selectedStudent;
           const skillsDisplay = s.part ? s.part.split(",").map((x: string) => x.trim()).filter(Boolean) : [];
           return (
-            <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "rgba(0,0,0,0.7)" }} onClick={() => setSelectedStudent(null)}>
+            <div
+              className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+              onClick={() => setSelectedStudent(null)}
+            >
               <div
-                className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-7 flex flex-col gap-5"
+                className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-7 flex flex-col gap-5"
                 onClick={(e) => e.stopPropagation()}
-                style={{ background: "#111E30", border: "1px solid #2A4060", boxShadow: "0 8px 40px rgba(0,0,0,0.8)" }}
+                style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[22px] font-bold" style={{ color: "#E8DCBC", fontFamily: "'Playfair Display', serif" }}>{s.name}</p>
-                    <p className="text-[13px] font-medium" style={{ color: "#4A6A8A" }}>
+                    <p className="text-[22px] font-bold text-[#1D1D1F]">{s.name}</p>
+                    <p className="text-[13px] font-medium text-[#86868B]">
                       {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
                     </p>
                   </div>
-                  <button onClick={() => setSelectedStudent(null)} className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] transition-colors" style={{ background: "#162030", color: "#4A6A8A", border: "1px solid #2A4060" }}>
-                    ✕
+                  <button
+                    onClick={() => setSelectedStudent(null)}
+                    className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center text-[#86868B] hover:bg-[#ECECEE] transition-colors text-[18px]"
+                  >
+                    X
                   </button>
                 </div>
 
                 {s.genres && s.genres.length > 0 && (
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-medium" style={{ color: "#3A5A78" }}>선호 장르</span>
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">선호 장르</span>
                     <div className="flex gap-1.5 flex-wrap">
                       {s.genres.map((g) => (
-                        <span key={g} className="h-[28px] px-3.5 rounded-[4px] text-[12px] font-medium flex items-center" style={{ background: "#162030", color: "#4A6A8A", border: "1px solid #2A4060" }}>{g}</span>
+                        <span key={g} className="h-[28px] px-3.5 bg-[#F5F5F7] rounded-[17px] text-[12px] font-medium text-[#86868B] flex items-center">
+                          {g}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {[
-                  { label: "한줄 소개", value: s.intro },
-                  { label: "좋아하는 게임", value: s.favorite_games },
-                  { label: "만들고 싶은 게임", value: s.game_concept },
-                  { label: "선호하는 협업 방식", value: s.collab_style },
-                ].map(({ label, value }) => value ? (
-                  <div key={label} className="flex flex-col gap-1">
-                    <span className="text-[11px] font-medium" style={{ color: "#3A5A78" }}>{label}</span>
-                    <p className="text-[14px]" style={{ color: "#E8DCBC" }}>{value}</p>
+                {s.intro && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">한줄 소개</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.intro}</p>
                   </div>
-                ) : null)}
+                )}
+
+                {s.favorite_games && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">좋아하는 게임</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.favorite_games}</p>
+                  </div>
+                )}
+
+                {s.game_concept && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">만들고 싶은 게임</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.game_concept}</p>
+                  </div>
+                )}
+
+                {s.collab_style && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-medium text-[#AEAEB2]">선호하는 협업 방식</span>
+                    <p className="text-[14px] text-[#1D1D1F]">{s.collab_style}</p>
+                  </div>
+                )}
 
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleInterest(s.id); }}
-                  className="w-full h-11 rounded-[10px] text-[14px] font-semibold transition-colors"
-                  style={myInterests.has(s.id)
-                    ? { background: "#C8952A", color: "#0D1520" }
-                    : { background: "#162030", color: "#C8952A", border: "1px solid #C8952A" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleInterest(s.id);
+                  }}
+                  className={`w-full h-11 rounded-[10px] text-[14px] font-semibold transition-colors ${
+                    myInterests.has(s.id)
+                      ? "bg-[#007AFF] text-white"
+                      : "bg-[#F5F5F7] text-[#007AFF] hover:bg-[#ECECEE]"
+                  }`}
                 >
                   {myInterests.has(s.id) ? "관심 표시됨" : "관심 표시"}
                 </button>
