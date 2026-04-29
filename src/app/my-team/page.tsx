@@ -21,6 +21,9 @@ export default function MyTeamPage() {
   const [teamDesc, setTeamDesc] = useState("");
   const [creating, setCreating] = useState(false);
   const [settings, setSettings] = useState({ min_team_size: 2, max_team_size: 5 });
+  const [editingTeam, setEditingTeam] = useState(false);
+  const [editTeamName, setEditTeamName] = useState("");
+  const [editTeamDesc, setEditTeamDesc] = useState("");
 
   useEffect(() => {
     loadSettings();
@@ -101,6 +104,13 @@ export default function MyTeamPage() {
     if (!confirm("승인 신청 후에는 팀원을 변경할 수 없습니다. 진행하시겠습니까?")) return;
     await supabase.from("teams").update({ status: "pending" }).eq("id", team.id);
     await loadTeam(team.id);
+  }
+
+  async function handleUpdateTeam() {
+    if (!team || !editTeamName.trim()) return;
+    await supabase.from("teams").update({ name: editTeamName, description: editTeamDesc }).eq("id", team.id);
+    await loadTeam(team.id);
+    setEditingTeam(false);
   }
 
   async function handleCancelRequest() {
@@ -200,22 +210,63 @@ export default function MyTeamPage() {
           className="bg-white rounded-2xl p-7 flex flex-col gap-5"
           style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
         >
-          <div className="flex items-center gap-3">
-            <h2 className="text-[20px] font-bold text-[#1D1D1F] flex-1">{team.name}</h2>
-            {st && (
-              <span
-                className="h-7 px-3.5 rounded-[17px] text-[12px] font-semibold flex items-center"
-                style={{ backgroundColor: st.bg, color: st.color }}
-              >
-                {st.text}
+          {editingTeam ? (
+            <div className="flex flex-col gap-3">
+              <input
+                value={editTeamName}
+                onChange={(e) => setEditTeamName(e.target.value)}
+                placeholder="팀 이름"
+                className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+              />
+              <textarea
+                value={editTeamDesc}
+                onChange={(e) => setEditTeamDesc(e.target.value)}
+                placeholder="팀 소개 (선택)"
+                rows={3}
+                className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingTeam(false)}
+                  className="h-9 px-4 bg-[#F5F5F7] text-[#1D1D1F] text-[13px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleUpdateTeam}
+                  disabled={!editTeamName.trim()}
+                  className="h-9 px-4 bg-[#007AFF] text-white text-[13px] font-semibold rounded-[10px] hover:bg-[#0066DD] transition-colors disabled:opacity-50"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <h2 className="text-[20px] font-bold text-[#1D1D1F] flex-1">{team.name}</h2>
+              {isEditable && (
+                <button
+                  onClick={() => { setEditTeamName(team.name); setEditTeamDesc(team.description || ""); setEditingTeam(true); }}
+                  className="text-[13px] text-[#007AFF] font-medium hover:underline"
+                >
+                  편집
+                </button>
+              )}
+              {st && (
+                <span
+                  className="h-7 px-3.5 rounded-[17px] text-[12px] font-semibold flex items-center"
+                  style={{ backgroundColor: st.bg, color: st.color }}
+                >
+                  {st.text}
+                </span>
+              )}
+              <span className="h-7 px-3.5 bg-[#E3F2FD] rounded-[17px] text-[12px] font-semibold text-[#1565C0] flex items-center">
+                {members.length}/{settings.max_team_size}명
               </span>
-            )}
-            <span className="h-7 px-3.5 bg-[#E3F2FD] rounded-[17px] text-[12px] font-semibold text-[#1565C0] flex items-center">
-              {members.length}/{settings.max_team_size}명
-            </span>
-          </div>
+            </div>
+          )}
 
-          {team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
+          {!editingTeam && team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
 
           {!isLocked && team.status === "building" && (
             <div className="bg-[#FFF3E0] rounded-[10px] px-4 py-3 text-[13px] text-[#E65100]">
