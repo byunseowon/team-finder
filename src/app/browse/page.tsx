@@ -24,6 +24,7 @@ function BrowseContent() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filterGenre, setFilterGenre] = useState("");
+  const [filterInterest, setFilterInterest] = useState(false);
   const [myInterests, setMyInterests] = useState<Set<string>>(new Set());
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
@@ -63,6 +64,7 @@ function BrowseContent() {
 
   const filtered = students.filter((s) => {
     if (user && s.id === user.id) return false;
+    if (filterInterest && !myInterests.has(s.id)) return false;
     if (search) {
       const q = search.toLowerCase();
       const nameMatch = s.name.toLowerCase().includes(q);
@@ -100,6 +102,19 @@ function BrowseContent() {
           >
             전체
           </button>
+          {user && (
+            <button
+              onClick={() => setFilterInterest((v) => !v)}
+              className={`h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors ${
+                filterInterest
+                  ? "bg-[#1D1D1F] text-white"
+                  : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+              }`}
+              style={!filterInterest ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+            >
+              관심 인원만
+            </button>
+          )}
           {GENRE_OPTIONS.map((g) => (
             <button
               key={g}

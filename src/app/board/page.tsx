@@ -42,6 +42,7 @@ export default function BoardPage() {
   const [myPostInterests, setMyPostInterests] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<"" | "hiring" | "looking">("");
   const [filterMine, setFilterMine] = useState(false);
+  const [filterInterest, setFilterInterest] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -176,6 +177,7 @@ export default function BoardPage() {
 
   const filteredPosts = posts.filter((p) => {
     if (filterMine && user && p.author_id !== user.id) return false;
+    if (filterInterest && !myPostInterests.has(p.id)) return false;
     if (filterCategory && p.category !== filterCategory) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -238,6 +240,19 @@ export default function BoardPage() {
               style={!filterMine ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
             >
               내 글만
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={() => setFilterInterest((v) => !v)}
+              className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
+                filterInterest
+                  ? "bg-[#1D1D1F] text-white"
+                  : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+              }`}
+              style={!filterInterest ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+            >
+              관심 게시글만
             </button>
           )}
         </div>
