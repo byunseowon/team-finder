@@ -217,7 +217,7 @@ export default function MyTeamPage() {
 
           {team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
 
-          {!isLocked && team.status === "building" && isLeader && (
+          {!isLocked && team.status === "building" && (
             <div className="bg-[#FFF3E0] rounded-[10px] px-4 py-3 text-[13px] text-[#E65100]">
               승인 신청은 팀원이 {settings.min_team_size}명 이상 {settings.max_team_size}명 이하일 때 가능합니다.
               현재 {members.length}명입니다.
@@ -238,7 +238,7 @@ export default function MyTeamPage() {
 
           <div className="flex items-center justify-between">
             <span className="text-[14px] font-semibold text-[#1D1D1F]">팀원</span>
-            {isLeader && isEditable && members.length < settings.max_team_size && (
+            {isEditable && members.length < settings.max_team_size && (
               <button
                 onClick={handleAddMember}
                 className="text-[13px] text-[#007AFF] font-medium hover:underline"
@@ -264,7 +264,7 @@ export default function MyTeamPage() {
 
           {!isLocked && (
             <div className="flex gap-2.5 pt-2 flex-wrap">
-              {isLeader && team.status === "building" && (
+              {team.status === "building" && (
                 <button
                   onClick={handleRequestApproval}
                   disabled={members.length < settings.min_team_size || members.length > settings.max_team_size}
@@ -273,7 +273,7 @@ export default function MyTeamPage() {
                   승인 신청
                 </button>
               )}
-              {isLeader && team.status === "pending" && (
+              {team.status === "pending" && (
                 <button
                   onClick={handleCancelRequest}
                   className="h-10 px-5 bg-[#F5F5F7] text-[#E65100] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
