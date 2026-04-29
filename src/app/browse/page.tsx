@@ -141,11 +141,18 @@ function BrowseContent() {
                 className="bg-white rounded-2xl p-5 flex flex-col gap-3 cursor-pointer hover:ring-2 hover:ring-[#007AFF]/30 transition-all"
                 style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
               >
-                <div>
-                  <p className="text-[16px] font-semibold text-[#1D1D1F]">{s.name}</p>
-                  <p className="text-[12px] font-medium text-[#86868B]">
-                    {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
-                  </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[16px] font-semibold text-[#1D1D1F]">{s.name}</p>
+                    <p className="text-[12px] font-medium text-[#86868B]">
+                      {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
+                    </p>
+                  </div>
+                  {s.team_id && (
+                    <span className="shrink-0 h-[22px] px-2.5 bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-semibold rounded-[11px] flex items-center">
+                      팀 합류
+                    </span>
+                  )}
                 </div>
                 {s.genres && s.genres.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
@@ -181,7 +188,14 @@ function BrowseContent() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[22px] font-bold text-[#1D1D1F]">{s.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[22px] font-bold text-[#1D1D1F]">{s.name}</p>
+                      {s.team_id && (
+                        <span className="h-[22px] px-2.5 bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-semibold rounded-[11px] flex items-center">
+                          팀 합류
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[13px] font-medium text-[#86868B]">
                       {skillsDisplay.length > 0 ? skillsDisplay.join(", ") : "역량 미설정"}
                     </p>
