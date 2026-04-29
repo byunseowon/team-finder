@@ -91,6 +91,14 @@ export default function MyTeamPage() {
     await loadTeam(team.id);
   }
 
+  async function handleDissolveTeam() {
+    if (!user || !team) return;
+    if (!confirm("팀을 해체하시겠습니까? 모든 팀원의 팀 배정이 해제됩니다.")) return;
+    await supabase.from("students").update({ team_id: null }).eq("team_id", team.id);
+    await supabase.from("teams").delete().eq("id", team.id);
+    await refreshUser();
+  }
+
   async function handleRequestApproval() {
     if (!team) return;
     if (members.length < settings.min_team_size || members.length > settings.max_team_size) {
@@ -328,6 +336,14 @@ export default function MyTeamPage() {
                   className="h-10 px-5 bg-[#F5F5F7] text-[#FF3B30] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
                 >
                   팀 탈퇴
+                </button>
+              )}
+              {team.status !== "approved" && (
+                <button
+                  onClick={handleDissolveTeam}
+                  className="h-10 px-5 bg-[#F5F5F7] text-[#FF3B30] text-[14px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                >
+                  팀 해체
                 </button>
               )}
             </div>

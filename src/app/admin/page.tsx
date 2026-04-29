@@ -18,8 +18,9 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingTeams, setPendingTeams] = useState<{ id: string; name: string; members: { name: string; part: string | null }[] }[]>([]);
-  const [approvedTeams, setApprovedTeams] = useState<{ id: string; name: string; members: { name: string; part: string | null }[] }[]>([]);
+  const [pendingTeams, setPendingTeams] = useState<{ id: string; name: string; status: string; members: { name: string; part: string | null }[] }[]>([]);
+  const [approvedTeams, setApprovedTeams] = useState<{ id: string; name: string; status: string; members: { name: string; part: string | null }[] }[]>([]);
+  const [allTeams, setAllTeams] = useState<{ id: string; name: string; status: string; members: { name: string; part: string | null }[] }[]>([]);
 
   useEffect(() => {
     if (isAdmin) { loadSettings(); loadTeams(); }
@@ -36,6 +37,7 @@ export default function AdminPage() {
     );
     setPendingTeams(withMembers.filter((t) => t.status === "pending"));
     setApprovedTeams(withMembers.filter((t) => t.status === "approved"));
+    setAllTeams(withMembers);
   }
 
   async function handleApprove(teamId: string) {
@@ -47,6 +49,14 @@ export default function AdminPage() {
   async function handleCancelApproval(teamId: string) {
     await supabase.from("teams").update({ status: "building" }).eq("id", teamId);
     showMsg("승인이 취소되었습니다.");
+    loadTeams();
+  }
+
+  async function handleDeleteTeam(teamId: string, teamName: string) {
+    if (!confirm(`"${teamName}" 팀을 삭제하시겠습니까? 팀원들의 팀 배정이 모두 해제됩니다.`)) return;
+    await supabase.from("students").update({ team_id: null }).eq("team_id", teamId);
+    await supabase.from("teams").delete().eq("id", teamId);
+    showMsg(`"${teamName}" 팀이 삭제되었습니다.`);
     loadTeams();
   }
 
@@ -221,6 +231,47 @@ export default function AdminPage() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Team Management */}
+        {allTeams.length > 0 && (
+          <div
+            className="bg-white rounded-2xl p-6 flex flex-col gap-4"
+            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+          >
+            <p className="text-[16px] font-semibold text-[#1D1D1F]">팀 관리 ({allTeams.length}팀)</p>
+            {allTeams.map((t) => {
+              const statusInfo = {
+                building: { text: "팀빌딩 중", color: "#E65100", bg: "#FFF3E0" },
+                pending:  { text: "승인 신청", color: "#1565C0", bg: "#E3F2FD" },
+                approved: { text: "승인 완료", color: "#2E7D32", bg: "#E8F5E9" },
+              }[t.status] || { text: "팀빌딩 중", color: "#E65100", bg: "#FFF3E0" };
+              return (
+                <div key={t.id} className="flex items-center gap-4 bg-[#F5F5F7] rounded-[10px] px-4 py-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-[#1D1D1F]">{t.name}</p>
+                      <span
+                        className="h-[20px] px-2 rounded-[10px] text-[10px] font-semibold flex items-center"
+                        style={{ backgroundColor: statusInfo.bg, color: statusInfo.color }}
+                      >
+                        {statusInfo.text}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-[#86868B]">
+                      {t.members.length > 0 ? `${t.members.map((m) => m.name).join(", ")} (${t.members.length}명)` : "팀원 없음"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteTeam(t.id, t.name)}
+                    className="h-9 px-4 bg-[#F5F5F7] hover:bg-[#FFE5E5] text-[#FF3B30] text-[13px] font-medium rounded-[10px] transition-colors"
+                  >
+                    삭제
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
