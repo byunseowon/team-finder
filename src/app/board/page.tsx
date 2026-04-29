@@ -41,6 +41,7 @@ export default function BoardPage() {
   const [posting, setPosting] = useState(false);
   const [myPostInterests, setMyPostInterests] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<"" | "hiring" | "looking">("");
+  const [filterMine, setFilterMine] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -174,6 +175,7 @@ export default function BoardPage() {
   };
 
   const filteredPosts = posts.filter((p) => {
+    if (filterMine && user && p.author_id !== user.id) return false;
     if (filterCategory && p.category !== filterCategory) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -206,7 +208,7 @@ export default function BoardPage() {
           style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
         />
 
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           {[
             { value: "", label: "전체" },
             { value: "hiring", label: "구인" },
@@ -225,6 +227,19 @@ export default function BoardPage() {
               {f.label}
             </button>
           ))}
+          {user && (
+            <button
+              onClick={() => setFilterMine((v) => !v)}
+              className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
+                filterMine
+                  ? "bg-[#1D1D1F] text-white"
+                  : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+              }`}
+              style={!filterMine ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+            >
+              내 글만
+            </button>
+          )}
         </div>
 
         {showForm && (
