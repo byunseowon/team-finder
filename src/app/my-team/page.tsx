@@ -72,13 +72,9 @@ export default function MyTeamPage() {
     if (team.status === "approved") { alert("승인된 팀은 탈퇴할 수 없습니다."); return; }
     if (!confirm("정말 팀을 탈퇴하시겠습니까?")) return;
     await supabase.from("students").update({ team_id: null }).eq("id", user.id);
-    if (team.leader_id === user.id) {
-      const remaining = members.filter((m) => m.id !== user.id);
-      if (remaining.length > 0) {
-        await supabase.from("teams").update({ leader_id: remaining[0].id }).eq("id", team.id);
-      } else {
-        await supabase.from("teams").delete().eq("id", team.id);
-      }
+    const remaining = members.filter((m) => m.id !== user.id);
+    if (remaining.length === 0) {
+      await supabase.from("teams").delete().eq("id", team.id);
     }
     await refreshUser();
   }
@@ -120,7 +116,6 @@ export default function MyTeamPage() {
     await loadTeam(team.id);
   }
 
-  const isLeader = user && team?.leader_id === user.id;
   const isEditable = team?.status === "building" && !isLocked;
   const st = team ? STATUS_INFO[team.status] : null;
 
@@ -304,11 +299,6 @@ export default function MyTeamPage() {
               <div key={m.id} className="flex items-center h-11 px-4 bg-[#F5F5F7] rounded-[10px] gap-3">
                 <span className="text-[14px] font-medium text-[#1D1D1F] flex-1">{m.name}</span>
                 <span className="text-[12px] text-[#86868B]">{m.part || "파트 미설정"}</span>
-                {m.id === team.leader_id && (
-                  <span className="h-[22px] px-2.5 bg-[#007AFF] rounded-[17px] text-[10px] font-semibold text-white flex items-center">
-                    팀장
-                  </span>
-                )}
               </div>
             ))}
           </div>
