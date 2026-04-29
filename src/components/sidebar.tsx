@@ -4,17 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
-const navItems = [
-  { href: "/profile", label: "내 프로필" },
-  { href: "/browse", label: "인원 탐색" },
-  { href: "/board", label: "구인구직 보드" },
-  { href: "/my-team", label: "내 팀" },
-  { href: "/teams", label: "팀 현황" },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, logout, isTeamBuildingOpen, isLocked } = useAuth();
+
+  const navItems = [
+    { href: "/profile", label: "내 프로필" },
+    ...(isAdmin || (isTeamBuildingOpen && !isLocked) ? [
+      { href: "/browse", label: "인원 탐색" },
+      { href: "/board", label: "구인구직 보드" },
+    ] : []),
+    ...(isAdmin || isTeamBuildingOpen || isLocked ? [
+      { href: "/my-team", label: "내 팀" },
+      { href: "/teams", label: "팀 현황" },
+    ] : []),
+  ];
 
   return (
     <aside className="w-[240px] min-h-screen bg-white flex flex-col p-6 gap-0.5 shrink-0">

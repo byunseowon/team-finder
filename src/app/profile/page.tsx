@@ -9,7 +9,7 @@ const GENRE_OPTIONS = ["RPG", "FPS", "액션", "퍼즐", "시뮬레이션", "플
 const SKILL_OPTIONS = ["프로그래밍", "아트", "기획"];
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, isLocked } = useAuth();
   const [skills, setSkills] = useState<string[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [intro, setIntro] = useState("");
@@ -78,6 +78,11 @@ export default function ProfilePage() {
   return (
     <AppLayout>
       <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">내 프로필</h1>
+      {isLocked && (
+        <div className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[13px] text-[#86868B] mb-6">
+          팀 빌딩이 종료되어 프로필 수정이 불가합니다.
+        </div>
+      )}
       <div
         className="bg-white rounded-2xl p-7 flex flex-col gap-5"
         style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
@@ -95,8 +100,9 @@ export default function ProfilePage() {
             {SKILL_OPTIONS.map((s) => (
               <button
                 key={s}
-                onClick={() => toggleSkill(s)}
-                className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
+                onClick={() => !isLocked && toggleSkill(s)}
+                disabled={isLocked}
+                className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors disabled:opacity-60 disabled:cursor-default ${
                   skills.includes(s)
                     ? "bg-[#007AFF] text-white"
                     : "bg-[#F5F5F7] text-[#86868B] hover:bg-[#ECECEE]"
@@ -114,8 +120,9 @@ export default function ProfilePage() {
             {GENRE_OPTIONS.map((g) => (
               <button
                 key={g}
-                onClick={() => toggleGenre(g)}
-                className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors ${
+                onClick={() => !isLocked && toggleGenre(g)}
+                disabled={isLocked}
+                className={`h-[34px] px-4 rounded-[17px] text-[13px] font-medium transition-colors disabled:opacity-60 disabled:cursor-default ${
                   genres.includes(g)
                     ? "bg-[#007AFF] text-white"
                     : "bg-[#F5F5F7] text-[#86868B] hover:bg-[#ECECEE]"
@@ -133,7 +140,8 @@ export default function ProfilePage() {
             value={favoriteGames}
             onChange={(e) => setFavoriteGames(e.target.value)}
             placeholder="좋아하는 게임을 적어 주세요 (예: 엘든링, 발로란트, 젤다)"
-            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+            disabled={isLocked}
+            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30 disabled:opacity-60 disabled:cursor-default"
           />
         </div>
 
@@ -143,7 +151,8 @@ export default function ProfilePage() {
             value={intro}
             onChange={(e) => setIntro(e.target.value)}
             placeholder="자신을 한줄로 소개해 주세요"
-            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+            disabled={isLocked}
+            className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30 disabled:opacity-60 disabled:cursor-default"
           />
         </div>
 
@@ -154,7 +163,8 @@ export default function ProfilePage() {
             onChange={(e) => setGameConcept(e.target.value)}
             placeholder="어떤 게임을 만들고 싶은지 자유롭게 적어 주세요"
             rows={3}
-            className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
+            disabled={isLocked}
+            className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30 disabled:opacity-60 disabled:cursor-default"
           />
         </div>
 
@@ -165,20 +175,23 @@ export default function ProfilePage() {
             onChange={(e) => setCollabStyle(e.target.value)}
             placeholder="선호하는 소통/협업 스타일을 적어 주세요"
             rows={3}
-            className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
+            disabled={isLocked}
+            className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30 disabled:opacity-60 disabled:cursor-default"
           />
         </div>
 
-        <div className="flex gap-2.5 pt-2">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors disabled:opacity-50"
-          >
-            {saving ? "저장 중..." : "저장"}
-          </button>
-          {saved && <span className="text-[13px] text-[#34C759] self-center">저장되었습니다</span>}
-        </div>
+        {!isLocked && (
+          <div className="flex gap-2.5 pt-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors disabled:opacity-50"
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
+            {saved && <span className="text-[13px] text-[#34C759] self-center">저장되었습니다</span>}
+          </div>
+        )}
       </div>
 
       {/* 비밀번호 변경 */}

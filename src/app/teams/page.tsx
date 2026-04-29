@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/app-layout";
+import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Team, Student } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export default function TeamsPage() {
 }
 
 function TeamsContent() {
+  const { isAdmin, isTeamBuildingOpen, isLocked } = useAuth();
   const [teams, setTeams] = useState<TeamWithMembers[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   const [assignedCount, setAssignedCount] = useState(0);
@@ -61,6 +63,21 @@ function TeamsContent() {
   }
 
   const unassigned = totalStudents - assignedCount;
+
+  if (!isAdmin && !isTeamBuildingOpen && !isLocked) {
+    return (
+      <AppLayout>
+        <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">팀 현황</h1>
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <div className="w-16 h-16 bg-[#F5F5F7] rounded-2xl flex items-center justify-center">
+            <span className="text-[32px]">⏳</span>
+          </div>
+          <h2 className="text-[20px] font-bold text-[#1D1D1F]">아직 팀 빌딩이 시작되지 않았습니다</h2>
+          <p className="text-[14px] text-[#86868B]">먼저 프로필을 작성하고 기다려 주세요.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (loading) {
     return (

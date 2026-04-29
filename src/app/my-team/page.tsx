@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/app-layout";
-import LockGuard from "@/components/lock-guard";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Student, Team } from "@/lib/types";
@@ -14,7 +13,7 @@ const STATUS_INFO = {
 };
 
 export default function MyTeamPage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, isTeamBuildingOpen, isLocked } = useAuth();
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<Student[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -112,7 +111,7 @@ export default function MyTeamPage() {
   }
 
   const isLeader = user && team?.leader_id === user.id;
-  const isEditable = team?.status === "building";
+  const isEditable = team?.status === "building" && !isLocked;
   const st = team ? STATUS_INFO[team.status] : null;
 
   if (!user) {
@@ -124,128 +123,146 @@ export default function MyTeamPage() {
     );
   }
 
+  if (!isTeamBuildingOpen && !isLocked) {
+    return (
+      <AppLayout>
+        <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">내 팀</h1>
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <div className="w-16 h-16 bg-[#F5F5F7] rounded-2xl flex items-center justify-center">
+            <span className="text-[32px]">⏳</span>
+          </div>
+          <h2 className="text-[20px] font-bold text-[#1D1D1F]">아직 팀 빌딩이 시작되지 않았습니다</h2>
+          <p className="text-[14px] text-[#86868B]">먼저 프로필을 작성하고 기다려 주세요.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <LockGuard>
-        <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">내 팀</h1>
+      <h1 className="text-[28px] font-bold text-[#1D1D1F] mb-6">내 팀</h1>
 
-        {!team ? (
-          <div className="flex flex-col items-center gap-6 py-16">
-            <p className="text-[14px] text-[#86868B]">아직 소속된 팀이 없습니다.</p>
-            {!showCreate ? (
-              <button
-                onClick={() => setShowCreate(true)}
-                className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors"
-              >
-                새 팀 만들기
-              </button>
-            ) : (
-              <div
-                className="w-full max-w-md bg-white rounded-2xl p-7 flex flex-col gap-4"
-                style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
-              >
-                <input
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="팀 이름"
-                  className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
-                />
-                <textarea
-                  value={teamDesc}
-                  onChange={(e) => setTeamDesc(e.target.value)}
-                  placeholder="팀 소개 (선택)"
-                  rows={3}
-                  className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
-                />
-                <div className="flex gap-2.5">
-                  <button
-                    onClick={() => setShowCreate(false)}
-                    className="h-11 px-6 bg-[#F5F5F7] text-[#1D1D1F] text-[15px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleCreate}
-                    disabled={creating || !teamName.trim()}
-                    className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors disabled:opacity-50"
-                  >
-                    {creating ? "생성 중..." : "팀 생성"}
-                  </button>
-                </div>
+      {isLocked && (
+        <div className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[13px] text-[#86868B] mb-6">
+          팀 빌딩이 종료되어 수정이 불가합니다.
+        </div>
+      )}
+
+      {!team ? (
+        <div className="flex flex-col items-center gap-6 py-16">
+          <p className="text-[14px] text-[#86868B]">아직 소속된 팀이 없습니다.</p>
+          {!isLocked && !showCreate && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors"
+            >
+              새 팀 만들기
+            </button>
+          )}
+          {!isLocked && showCreate && (
+            <div
+              className="w-full max-w-md bg-white rounded-2xl p-7 flex flex-col gap-4"
+              style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+            >
+              <input
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="팀 이름"
+                className="h-11 bg-[#F5F5F7] rounded-[10px] px-4 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+              />
+              <textarea
+                value={teamDesc}
+                onChange={(e) => setTeamDesc(e.target.value)}
+                placeholder="팀 소개 (선택)"
+                rows={3}
+                className="bg-[#F5F5F7] rounded-[10px] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none resize-none focus:ring-2 focus:ring-[#007AFF]/30"
+              />
+              <div className="flex gap-2.5">
+                <button
+                  onClick={() => setShowCreate(false)}
+                  className="h-11 px-6 bg-[#F5F5F7] text-[#1D1D1F] text-[15px] font-medium rounded-[10px] hover:bg-[#ECECEE] transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={creating || !teamName.trim()}
+                  className="h-11 px-6 bg-[#007AFF] hover:bg-[#0066DD] text-white text-[15px] font-semibold rounded-[10px] transition-colors disabled:opacity-50"
+                >
+                  {creating ? "생성 중..." : "팀 생성"}
+                </button>
               </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          className="bg-white rounded-2xl p-7 flex flex-col gap-5"
+          style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
+        >
+          <div className="flex items-center gap-3">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F] flex-1">{team.name}</h2>
+            {st && (
+              <span
+                className="h-7 px-3.5 rounded-[17px] text-[12px] font-semibold flex items-center"
+                style={{ backgroundColor: st.bg, color: st.color }}
+              >
+                {st.text}
+              </span>
+            )}
+            <span className="h-7 px-3.5 bg-[#E3F2FD] rounded-[17px] text-[12px] font-semibold text-[#1565C0] flex items-center">
+              {members.length}/{settings.max_team_size}명
+            </span>
+          </div>
+
+          {team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
+
+          {!isLocked && team.status === "building" && isLeader && (
+            <div className="bg-[#FFF3E0] rounded-[10px] px-4 py-3 text-[13px] text-[#E65100]">
+              승인 신청은 팀원이 {settings.min_team_size}명 이상 {settings.max_team_size}명 이하일 때 가능합니다.
+              현재 {members.length}명입니다.
+            </div>
+          )}
+          {!isLocked && team.status === "pending" && (
+            <div className="bg-[#E3F2FD] rounded-[10px] px-4 py-3 text-[13px] text-[#1565C0]">
+              승인 신청이 완료되었습니다. 운영진의 승인을 기다리는 중입니다.
+            </div>
+          )}
+          {team.status === "approved" && (
+            <div className="bg-[#E8F5E9] rounded-[10px] px-4 py-3 text-[13px] text-[#2E7D32]">
+              팀 구성이 승인되었습니다.
+            </div>
+          )}
+
+          <div className="w-full h-px bg-[#F5F5F7]" />
+
+          <div className="flex items-center justify-between">
+            <span className="text-[14px] font-semibold text-[#1D1D1F]">팀원</span>
+            {isLeader && isEditable && members.length < settings.max_team_size && (
+              <button
+                onClick={handleAddMember}
+                className="text-[13px] text-[#007AFF] font-medium hover:underline"
+              >
+                + 팀원 추가
+              </button>
             )}
           </div>
-        ) : (
-          <div
-            className="bg-white rounded-2xl p-7 flex flex-col gap-5"
-            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
-          >
-            {/* 헤더 */}
-            <div className="flex items-center gap-3">
-              <h2 className="text-[20px] font-bold text-[#1D1D1F] flex-1">{team.name}</h2>
-              {st && (
-                <span
-                  className="h-7 px-3.5 rounded-[17px] text-[12px] font-semibold flex items-center"
-                  style={{ backgroundColor: st.bg, color: st.color }}
-                >
-                  {st.text}
-                </span>
-              )}
-              <span className="h-7 px-3.5 bg-[#E3F2FD] rounded-[17px] text-[12px] font-semibold text-[#1565C0] flex items-center">
-                {members.length}/{settings.max_team_size}명
-              </span>
-            </div>
 
-            {team.description && <p className="text-[14px] text-[#86868B]">{team.description}</p>}
-
-            {/* 승인 신청 안내 */}
-            {team.status === "building" && isLeader && (
-              <div className="bg-[#FFF3E0] rounded-[10px] px-4 py-3 text-[13px] text-[#E65100]">
-                승인 신청은 팀원이 {settings.min_team_size}명 이상 {settings.max_team_size}명 이하일 때 가능합니다.
-                현재 {members.length}명입니다.
+          <div className="flex flex-col gap-2.5">
+            {members.map((m) => (
+              <div key={m.id} className="flex items-center h-11 px-4 bg-[#F5F5F7] rounded-[10px] gap-3">
+                <span className="text-[14px] font-medium text-[#1D1D1F] flex-1">{m.name}</span>
+                <span className="text-[12px] text-[#86868B]">{m.part || "파트 미설정"}</span>
+                {m.id === team.leader_id && (
+                  <span className="h-[22px] px-2.5 bg-[#007AFF] rounded-[17px] text-[10px] font-semibold text-white flex items-center">
+                    팀장
+                  </span>
+                )}
               </div>
-            )}
-            {team.status === "pending" && (
-              <div className="bg-[#E3F2FD] rounded-[10px] px-4 py-3 text-[13px] text-[#1565C0]">
-                승인 신청이 완료되었습니다. 운영진의 승인을 기다리는 중입니다.
-              </div>
-            )}
-            {team.status === "approved" && (
-              <div className="bg-[#E8F5E9] rounded-[10px] px-4 py-3 text-[13px] text-[#2E7D32]">
-                팀 구성이 승인되었습니다. 팀 구성을 변경할 수 없습니다.
-              </div>
-            )}
+            ))}
+          </div>
 
-            <div className="w-full h-px bg-[#F5F5F7]" />
-
-            {/* 팀원 목록 */}
-            <div className="flex items-center justify-between">
-              <span className="text-[14px] font-semibold text-[#1D1D1F]">팀원</span>
-              {isLeader && isEditable && members.length < settings.max_team_size && (
-                <button
-                  onClick={handleAddMember}
-                  className="text-[13px] text-[#007AFF] font-medium hover:underline"
-                >
-                  + 팀원 추가
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center h-11 px-4 bg-[#F5F5F7] rounded-[10px] gap-3">
-                  <span className="text-[14px] font-medium text-[#1D1D1F] flex-1">{m.name}</span>
-                  <span className="text-[12px] text-[#86868B]">{m.part || "파트 미설정"}</span>
-                  {m.id === team.leader_id && (
-                    <span className="h-[22px] px-2.5 bg-[#007AFF] rounded-[17px] text-[10px] font-semibold text-white flex items-center">
-                      팀장
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* 하단 버튼 */}
+          {!isLocked && (
             <div className="flex gap-2.5 pt-2 flex-wrap">
               {isLeader && team.status === "building" && (
                 <button
@@ -273,9 +290,9 @@ export default function MyTeamPage() {
                 </button>
               )}
             </div>
-          </div>
-        )}
-      </LockGuard>
+          )}
+        </div>
+      )}
     </AppLayout>
   );
 }
