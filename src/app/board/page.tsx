@@ -17,7 +17,17 @@ interface PostWithAuthor {
   created_at: string;
   students: { name: string; team_id: string | null } | null;
   interest_count: number;
+  comment_count: number;
   team_name?: string;
+}
+
+interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  students: { name: string } | null;
 }
 
 export default function BoardPage() {
@@ -37,6 +47,11 @@ export default function BoardPage() {
   const [editStatus, setEditStatus] = useState<"open" | "closed">("open");
   const [search, setSearch] = useState("");
 
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+  const [comments, setComments] = useState<Record<string, Comment[]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [submittingComment, setSubmittingComment] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     loadPosts();
     if (user) loadMyPostInterests();
@@ -50,16 +65,20 @@ export default function BoardPage() {
     if (postsData) {
       const withCounts = await Promise.all(
         postsData.map(async (p) => {
-          const { count } = await supabase
+          const { count: interestCount } = await supabase
             .from("interests")
             .select("*", { count: "exact", head: true })
             .eq("to_post_id", p.id);
+          const { count: commentCount } = await supabase
+            .from("post_comments")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", p.id);
           let team_name = "";
           if (p.students?.team_id) {
             const { data: team } = await supabase.from("teams").select("name").eq("id", p.students.team_id).single();
             if (team) team_name = team.name;
           }
-          return { ...p, interest_count: count || 0, team_name };
+          return { ...p, interest_count: interestCount || 0, comment_count: commentCount || 0, team_name };
         })
       );
       setPosts(withCounts);
@@ -97,6 +116,42 @@ export default function BoardPage() {
     setShowForm(false);
     await loadPosts();
     setPosting(false);
+  }
+
+  async function loadComments(postId: string) {
+    const { data } = await supabase
+      .from("post_comments")
+      .select("*, students(name)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
+    if (data) setComments((prev) => ({ ...prev, [postId]: data }));
+  }
+
+  async function toggleComments(postId: string) {
+    if (expandedComments.has(postId)) {
+      setExpandedComments((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+    } else {
+      setExpandedComments((prev) => new Set(prev).add(postId));
+      await loadComments(postId);
+    }
+  }
+
+  async function submitComment(postId: string) {
+    if (!user) return;
+    const content = (commentInputs[postId] || "").trim();
+    if (!content) return;
+    setSubmittingComment((prev) => new Set(prev).add(postId));
+    await supabase.from("post_comments").insert({ post_id: postId, author_id: user.id, content });
+    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    await loadComments(postId);
+    await loadPosts();
+    setSubmittingComment((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+  }
+
+  async function deleteComment(commentId: string, postId: string) {
+    await supabase.from("post_comments").delete().eq("id", commentId);
+    await loadComments(postId);
+    await loadPosts();
   }
 
   function timeAgo(dateStr: string) {
@@ -226,13 +281,14 @@ export default function BoardPage() {
           {filteredPosts.map((p) => {
             const st = statusLabel[p.status] || statusLabel.open;
             const cat = categoryLabel[p.category] || categoryLabel.hiring;
+            const postComments = comments[p.id] || [];
+            const isExpanded = expandedComments.has(p.id);
             return (
               <div
                 key={p.id}
                 className="bg-white rounded-2xl p-6 flex flex-col gap-3"
                 style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.03)" }}
               >
-                {/* 헤더: 카테고리 + 상태 + 제목 + 글쓴이 + 프로필/팀 버튼 */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className="h-[26px] px-3 rounded-[17px] text-[11px] font-semibold flex items-center shrink-0"
@@ -264,10 +320,8 @@ export default function BoardPage() {
                   </button>
                 </div>
 
-                {/* 본문 */}
                 {p.content && <p className="text-[13px] text-[#86868B]">{p.content}</p>}
 
-                {/* 하단: 시간 + 관심 | 수정/삭제 오른쪽 */}
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-[#AEAEB2]">{timeAgo(p.created_at)}</span>
                   <button
@@ -277,6 +331,14 @@ export default function BoardPage() {
                     }`}
                   >
                     관심 {p.interest_count}
+                  </button>
+                  <button
+                    onClick={() => toggleComments(p.id)}
+                    className={`text-[12px] font-medium transition-colors ${
+                      isExpanded ? "text-white bg-[#86868B] px-3 py-1 rounded-full" : "text-[#86868B] hover:text-[#1D1D1F]"
+                    }`}
+                  >
+                    댓글 {p.comment_count}
                   </button>
                   <div className="flex gap-3 ml-auto">
                     {user && p.author_id === user.id && editingId !== p.id && (
@@ -296,6 +358,7 @@ export default function BoardPage() {
                           onClick={async () => {
                             if (!confirm("정말 삭제하시겠습니까?")) return;
                             await supabase.from("interests").delete().eq("to_post_id", p.id);
+                            await supabase.from("post_comments").delete().eq("post_id", p.id);
                             await supabase.from("posts").delete().eq("id", p.id);
                             loadPosts();
                           }}
@@ -310,6 +373,7 @@ export default function BoardPage() {
                         onClick={async () => {
                           if (!confirm("관리자 권한으로 이 글을 삭제하시겠습니까?")) return;
                           await supabase.from("interests").delete().eq("to_post_id", p.id);
+                          await supabase.from("post_comments").delete().eq("post_id", p.id);
                           await supabase.from("posts").delete().eq("id", p.id);
                           loadPosts();
                         }}
@@ -321,7 +385,6 @@ export default function BoardPage() {
                   </div>
                 </div>
 
-                {/* 수정 폼 */}
                 {user && p.author_id === user.id && editingId === p.id && (
                   <div className="flex flex-col gap-3 pt-2 border-t border-[#F5F5F7]">
                     <input
@@ -373,6 +436,61 @@ export default function BoardPage() {
                         저장
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="flex flex-col gap-2 pt-3 border-t border-[#F5F5F7]">
+                    {postComments.length === 0 && (
+                      <p className="text-[12px] text-[#AEAEB2] text-center py-1">아직 댓글이 없습니다.</p>
+                    )}
+                    {postComments.map((c) => (
+                      <div key={c.id} className="flex items-start gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[#F5F5F7] flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="text-[10px] font-semibold text-[#86868B]">
+                            {(c.students?.name || "?")[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1 bg-[#F5F5F7] rounded-[10px] px-3 py-2">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[12px] font-semibold text-[#1D1D1F]">{c.students?.name || "알 수 없음"}</span>
+                            <span className="text-[11px] text-[#AEAEB2]">{timeAgo(c.created_at)}</span>
+                            {(user && c.author_id === user.id) || isAdmin ? (
+                              <button
+                                onClick={() => deleteComment(c.id, p.id)}
+                                className="ml-auto text-[11px] text-[#FF3B30] hover:underline"
+                              >
+                                삭제
+                              </button>
+                            ) : null}
+                          </div>
+                          <p className="text-[13px] text-[#1D1D1F]">{c.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {user && (
+                      <div className="flex gap-2 mt-1">
+                        <input
+                          value={commentInputs[p.id] || ""}
+                          onChange={(e) => setCommentInputs((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              submitComment(p.id);
+                            }
+                          }}
+                          placeholder="댓글을 입력하세요 (Enter로 등록)"
+                          className="flex-1 h-9 bg-[#F5F5F7] rounded-[10px] px-3 text-[13px] text-[#1D1D1F] placeholder-[#AEAEB2] outline-none focus:ring-2 focus:ring-[#007AFF]/30"
+                        />
+                        <button
+                          onClick={() => submitComment(p.id)}
+                          disabled={!(commentInputs[p.id] || "").trim() || submittingComment.has(p.id)}
+                          className="h-9 px-4 bg-[#007AFF] text-white text-[13px] font-semibold rounded-[10px] hover:bg-[#0066DD] transition-colors disabled:opacity-50"
+                        >
+                          등록
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
