@@ -25,6 +25,7 @@ function BrowseContent() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [filterGenre, setFilterGenre] = useState("");
   const [filterInterest, setFilterInterest] = useState(false);
+  const [filterUnassigned, setFilterUnassigned] = useState(false);
   const [myInterests, setMyInterests] = useState<Set<string>>(new Set());
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
@@ -65,6 +66,7 @@ function BrowseContent() {
   const filtered = students.filter((s) => {
     if (user && s.id === user.id) return false;
     if (filterInterest && !myInterests.has(s.id)) return false;
+    if (filterUnassigned && s.team_id) return false;
     if (search) {
       const q = search.toLowerCase();
       const nameMatch = s.name.toLowerCase().includes(q);
@@ -90,15 +92,16 @@ function BrowseContent() {
           />
         </div>
 
-        <div className="flex gap-2 mb-6 flex-wrap">
+        {/* 윗줄: 전체 / 관심 인원만 / 미합류만 */}
+        <div className="flex gap-2 mb-2 flex-wrap">
           <button
-            onClick={() => setFilterGenre("")}
+            onClick={() => { setFilterInterest(false); setFilterUnassigned(false); }}
             className={`h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors ${
-              filterGenre === ""
+              !filterInterest && !filterUnassigned
                 ? "bg-[#007AFF] text-white"
                 : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
             }`}
-            style={filterGenre !== "" ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+            style={filterInterest || filterUnassigned ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
           >
             전체
           </button>
@@ -115,6 +118,21 @@ function BrowseContent() {
               관심 인원만
             </button>
           )}
+          <button
+            onClick={() => setFilterUnassigned((v) => !v)}
+            className={`h-[30px] px-3 rounded-[15px] text-[12px] font-medium transition-colors ${
+              filterUnassigned
+                ? "bg-[#1D1D1F] text-white"
+                : "bg-white text-[#86868B] hover:bg-[#ECECEE]"
+            }`}
+            style={!filterUnassigned ? { boxShadow: "0 2px 20px rgba(0,0,0,0.03)" } : {}}
+          >
+            미합류만
+          </button>
+        </div>
+
+        {/* 아랫줄: 장르 필터 */}
+        <div className="flex gap-2 mb-6 flex-wrap">
           {GENRE_OPTIONS.map((g) => (
             <button
               key={g}
